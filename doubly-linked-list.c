@@ -198,17 +198,21 @@ int insertLast(headNode* h, int key) {
 	newNode->key = key;
 
 	if (IS_EMPTY(h->first)) {
+		newNode->rlink = NULL;
+		newNode->llink = NULL;
 		h->first = newNode;
-		newNode->llink = newNode;
-		newNode->rlink = newNode;
 
 		return 0;
 	}
 
-	newNode->llink = h->first;
-	newNode->rlink = h->first->llink->rlink;
-	h->first->llink = newNode;
-	h->first->llink->rlink = newNode;
+	listNode* searchLast = h->first;
+
+	while (searchLast->rlink != NULL)
+		searchLast = searchLast->rlink;
+	
+	newNode->rlink = NULL;
+	newNode->llink = searchLast;
+	searchLast->rlink = newNode;
 
 	return 0;
 }
@@ -229,11 +233,12 @@ int deleteLast(headNode* h) {
 		return 1;
 	}
 
-	listNode* temp = h->first->llink;
+	listNode* searchLast = h->first;
+	while (searchLast->rlink != NULL)
+		searchLast = searchLast->rlink;
 
-	h->first->llink = temp->llink;
-	temp->llink->rlink = h->first;
-	free(temp);
+	searchLast->llink->rlink = NULL;
+	free(searchLast);
 
 	return 0;
 }
@@ -253,17 +258,16 @@ int insertFirst(headNode* h, int key) {
 	newNode->key = key;
 
 	if (IS_EMPTY(h->first)) {
+		newNode->rlink = NULL;
+		newNode->llink = NULL;
 		h->first = newNode;
-		newNode->llink = newNode;
-		newNode->rlink = newNode;
 
 		return 0;
 	}
 
 	newNode->rlink = h->first;
-	newNode->llink = h->first->llink;
+	newNode->llink = NULL;
 	h->first->llink = newNode;
-	h->first->llink->rlink = newNode;
 	h->first = newNode;
 
 	return 0;
@@ -284,9 +288,8 @@ int deleteFirst(headNode* h) {
 	}
 
 	listNode* temp = h->first;
-	temp->rlink->llink = h->first->llink;
-	temp->llink->rlink = h->first;
 	h->first = temp->rlink;
+	temp->rlink->llink = NULL;
 	free(temp);
 
 	return 0;
@@ -304,9 +307,23 @@ int invertList(headNode* h) {
 	}
 
 	if (IS_EMPTY(h->first)) {
-		
+		printf("Nothing to invert.\n");
+		return 1;
 	}
 
+	listNode* temp = NULL;
+	while (h->first->rlink != NULL) {
+		temp = h->first->llink;
+		h->first->llink = h->first->rlink;
+		h->first->rlink = temp;
+
+		h->first = h->first->llink;
+	}
+
+	temp = h->first->llink;
+	h->first->llink = h->first->rlink;
+	h->first->rlink = temp;
+	
 	return 0;
 }
 
@@ -319,11 +336,36 @@ int insertNode(headNode* h, int key) {
 		return 1;
 	}
 
-	if (IS_EMPTY(h->first)) {
-		
-	}
+	listNode* newNode = (listNode*)malloc(sizeof(listNode));
+	newNode->key = key;
 
-	return 0;
+	if (IS_EMPTY(h->first)) {
+		newNode->rlink = NULL;
+		newNode->llink = NULL;
+		h->first = newNode;
+		return 0;
+	}
+	else {
+		if (key < h->first->key) {
+			insertFirst(h, key);
+			return 0;
+		}
+
+		listNode* searchNode = h->first->rlink;
+		while (searchNode != NULL) {
+			if (key < searchNode->key ) {
+				newNode->llink = searchNode->llink;
+				newNode->rlink = searchNode;
+				searchNode->llink->rlink = newNode;
+				searchNode->llink = newNode;
+				return 0;
+			}
+			searchNode = searchNode->rlink;
+		}
+		
+		insertLast(h, key);
+		return 0;
+	}
 }
 
 
@@ -339,6 +381,35 @@ int deleteNode(headNode* h, int key) {
 	if (IS_EMPTY(h->first)) {
 		printf("Nothing to delete.\n");
 		return 1;
+	}
+	
+	listNode* searchKey = h->first;
+	while ((searchKey) && (searchKey->key == key)) {
+		searchKey = searchKey->rlink;
+		free(h->first);
+		h->first = searchKey;
+	}
+
+	while (searchKey) {
+		if (searchKey->rlink != NULL) {
+			if (searchKey->key == key) {
+				searchKey->rlink->llink = searchKey->llink;
+				searchKey = searchKey->rlink;
+				free(searchKey->llink->rlink);
+				searchKey->llink->rlink = searchKey;
+			}
+			else 
+				searchKey = searchKey->rlink;
+		}
+		else {
+			if (searchKey->key == key) {
+				searchKey->llink->rlink = NULL;
+				free(searchKey);
+				return 0;
+			}
+			else 
+				return 0;
+		}
 	}
 
 	return 1;
